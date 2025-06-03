@@ -127,30 +127,24 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
     }
     stages {
-        stage ("Clean Workspace") {
+        stage ("clean workspace") {
             steps {
                 cleanWs()
             }
         }
-
         stage ("Git Checkout") {
             steps {
                 git 'https://github.com/SakshiShinde26/DevOps-Project-Zomato-Kastro.git'
             }
         }
-
         stage("Sonarqube Analysis") {
             steps {
                 withSonarQubeEnv('sonar-server') {
-                    sh '''
-                        $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=zomato \
-                        -Dsonar.projectKey=zomato
-                    '''
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=zomato \
+                    -Dsonar.projectKey=zomato '''
                 }
             }
         }
-
         stage("Code Quality Gate") {
             steps {
                 script {
@@ -158,7 +152,6 @@ pipeline {
                 }
             }
         }
-
         stage("Install NPM Dependencies") {
             steps {
                 sh "npm install"
@@ -169,12 +162,12 @@ pipeline {
             steps {
                 script {
                     def scanStatus = sh(
-                        script: 'dependency-check.sh --project ZomatoProject --scan ./ --disableYarnAudit --disableNodeAudit -n --enableExperimental',
+                        script: 'dependency-check.sh --project ZomatoProject --scan ./ --disableYarnAudit --disableNodeAudit --update -n',
                         returnStatus: true
                     )
                     echo "Dependency-Check exit code: ${scanStatus}"
                     if (scanStatus != 0) {
-                        echo "Vulnerabilities found, continuing pipeline without marking unstable."
+                        echo "Vulnerabilities or errors occurred. Continuing without failing the build."
                     }
                 }
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
@@ -197,8 +190,8 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker') {
-                        sh "docker tag zomato sakshinde290/zomato:latest"
-                        sh "docker push sakshinde290/zomato:latest"
+                        sh "docker tag zomato sakshinde290/zomato:latest "
+                        sh "docker push sakshinde290/zomato:latest "
                     }
                 }
             }
@@ -222,7 +215,6 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             emailext attachLog: true,
